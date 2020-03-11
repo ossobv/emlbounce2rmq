@@ -12,26 +12,35 @@ from email.parser import BytesParser
 MailParser = BytesParser  # export
 
 
-class Email2xx(Exception):
+class EmailResponse(Exception):
     def __init__(self, filename):
-        self.args = (filename,)
+        self.filename = filename
+        self.final_rcpt = None
+
+    def __repr__(self):
+        return '<{cls}({fn} => {rcpt})>'.format(
+            cls=self.__class__.__name__, fn=self.filename,
+            rcpt=self.final_rcpt)
 
 
-class Email299(Exception):
-    def __init__(self, filename):
-        self.args = (filename,)
+class Email2xx(EmailResponse):
+    pass
 
 
-class Email4xx(Exception):
-    # FIXME: get original sender too...
-    def __init__(self, filename, orig_rcpt):
-        self.args = (filename, orig_rcpt)
+class Email299(EmailResponse):
+    pass
 
 
-class Email5xx(Exception):
-    # FIXME: get original sender too...
-    def __init__(self, filename, orig_rcpt):
-        self.args = (filename, orig_rcpt)
+class Email4xx(EmailResponse):
+    def __init__(self, filename, final_rcpt):
+        super().__init__(filename)
+        self.final_rcpt = final_rcpt
+
+
+class Email5xx(EmailResponse):
+    def __init__(self, filename, final_rcpt):
+        super().__init__(filename)
+        self.final_rcpt = final_rcpt
 
 
 class IgnoreEmail(Email299):
@@ -135,6 +144,7 @@ class EmailFile:
         return to
 
     def get_original_recipient(self):
+        # Will AttributeError if the original is not set yet.
         return self._manual_original_recipient
 
     def set_original_recipient(self, original_recipient):
