@@ -220,24 +220,29 @@ def has_message_delivery_status(efile):
             pass
         else:
             lines = [i.rstrip() for i in delivery_status.split('\n')]
-            rcpt = final_rcpt = status = None
+            rcpt = final_rcpt = action = status = None
             for line in lines:
                 if line.startswith('Final-Recipient: rfc822;'):
                     final_rcpt = line[len('Final-Recipient: rfc822;'):].strip()
                 if line.startswith('Original-Recipient: rfc822;'):
                     rcpt = line[len('Original-Recipient: rfc822;'):].strip()
+                if line.startswith('Action: '):
+                    action = line[len('Action: '):].strip()
                 if line.startswith('Status: '):
                     status = line[len('Status: '):].strip()
             if not rcpt:
                 rcpt = final_rcpt
             if rcpt and status:
                 assert not efile.is_auto_reply(), efile
-                if status[0] == '4':
-                    efile.set_original_recipient(rcpt)
-                    raise Email4xx(efile.filename, rcpt)  # source?
-                elif status[0] == '5':
+                if status[0] == '5' or (
+                        status == '4.4.1' and action == 'failed'):
                     efile.set_original_recipient(rcpt)
                     raise Email5xx(efile.filename, rcpt)  # source?
+                elif status[0] == '4' and action == 'delayed':
+                    efile.set_original_recipient(rcpt)
+                    raise Email4xx(efile.filename, rcpt)  # source?
+                elif status[0] == '4':
+                    raise IgnoreEmail(efile.filename)
 
 
 def imss7_ndr(efile):

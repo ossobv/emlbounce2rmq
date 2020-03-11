@@ -40,26 +40,24 @@ def emlbounce2rmq(filenames, do_move, do_publish):
             handler = None
         except mailproc.Email2xx as e:
             log.debug(
-                '%s - %s: Ignoring and moving to .Junk (subj = %s)',
+                '%s - %s: Moving to .Junk.Autoreply (subj = %s)',
                 efile.filename, e.__class__.__name__, efile.get_subject())
-            # #print('ignore and drop:', e, file=sys.stderr)
-            # Move to .Junk/
             if do_move:
-                mailproc.move_email(efile.filename, '.Junk')
+                mailproc.move_email(efile.filename, '.Junk-Autoreply')
         except mailproc.Email299 as e:
             log.debug(
-                '%s - %s: Moving to .Junk, but it should be checked',
+                '%s - %s: Moving to .Junk.Checkme (subj = %s)',
                 efile.filename, e.__class__.__name__)
             if do_move:
-                mailproc.move_email(efile.filename, '.Junk')
+                mailproc.move_email(efile.filename, '.Junk-Checkme')
         except mailproc.Email4xx as e:
             # A 4xx means that it will be retried, and we'll get a 5xx
             # later on. Drop the mail?
             log.debug(
-                '%s - %s: FIXME, should be deleted (rcpt = %s)',
+                '%s - %s: Keeping. Should be deleted! (rcpt = %s)',
                 efile.filename, e.__class__.__name__, e.final_rcpt)
-            # XXX: todo: delete/unlink?
-            pass
+            if do_move:
+                mailproc.move_email(efile.filename, '.Junk-Deleted')
         except mailproc.Email5xx as e:
             log.debug(
                 '%s - %s: Marked as invalid-destination (rcpt = %s)',
@@ -88,6 +86,9 @@ def emlbounce2rmq(filenames, do_move, do_publish):
         # Move to .Bad-Recipient/
         if do_move:
             # NOTE: We'll want to purge these from the disk at one point.
+            # Use a cron job with find for now.
+            #   find .../bounces -mtime +180 -regex '.*/[0-9]+[.].*' -type f \
+            #     -delete
             invalids.move_all_to('.Bad-Recipient')
 
     # Debug what handlers were used:
