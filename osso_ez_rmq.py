@@ -205,6 +205,7 @@ class BaseProducer(_BaseRmqChannel):
             exchange=exchange_name,
             routing_key=routing_key,
             properties=pika.BasicProperties(
+                content_type='application/json',
                 delivery_mode=2,  # make message persistent
             ),
             body=json.dumps(payload, default=_json_serial))
