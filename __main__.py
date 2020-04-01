@@ -74,13 +74,13 @@ def emlbounce2rmq(filenames, do_move, do_publish):
         if do_publish:
             publisher = Publisher()
             for invalid in invalids:
-                doc = invalid.as_json()
+                doc = invalid.as_dict()
                 log.debug('publish: %r', doc)
                 publisher.publish(doc)
             publisher.close()
         else:
             for invalid in invalids:
-                doc = invalid.as_json()
+                doc = invalid.as_dict()
                 log.info('Summary of bad RCPT: %s', invalid)
 
         # Move to .Bad-Recipient/

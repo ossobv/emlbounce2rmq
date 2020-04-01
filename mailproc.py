@@ -334,7 +334,7 @@ handlers = (
 
 
 class InvalidAddressList(list):
-    def as_json(self):
+    def as_dict(self):
         begin = self[0]
         end = self[-1]
         return {
