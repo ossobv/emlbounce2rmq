@@ -19,8 +19,8 @@ log = logging.getLogger('emlbounce2rmq')
 
 class Publisher(BaseProducer):
     def __init__(self):
-        log.debug('Setting up RabbitMQ connection from URI: %s', PUBLISH_API)
         self._rmqc = rmq_uri(PUBLISH_API)
+        log.debug('Setting up RabbitMQ connection from URI: %s', self._rmqc)
         super().__init__()
 
 
