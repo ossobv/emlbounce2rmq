@@ -335,26 +335,24 @@ handlers = (
 
 class InvalidAddressList(list):
     def as_dict(self):
-        begin = self[0]
-        end = self[-1]
+        # Previously, we assumed we were sorted. We may not be.
+        dates = [i.get_date() for i in self]
+        dates.sort()
+        begin = dates[0]
+        end = dates[-1]
+        any_ = self[0]
         return {
-            'first_seen': begin.get_date().strftime('%Y-%m-%d'),
-            'last_seen': end.get_date().strftime('%Y-%m-%d'),
+            'first_seen': begin.strftime('%Y-%m-%d'),
+            'last_seen': end.strftime('%Y-%m-%d'),
             'count': len(self),
-            'from': begin.get_original_envelope_from(),
-            'to': begin.get_original_recipient(),
+            'from': any_.get_original_envelope_from(),
+            'to': any_.get_original_recipient(),
         }
 
     def __str__(self):
-        begin = self[0]
-        end = self[-1]
         return (
-            '{begin_date}..{end_date} {count:5d}x [from={orig_from}] '
-            '{address}').format(
-                begin_date=begin.get_date().strftime('%Y-%m-%d'),
-                end_date=end.get_date().strftime('%Y-%m-%d'),
-                count=len(self), address=begin.get_original_recipient(),
-                orig_from=begin.get_original_envelope_from())
+            '{first_seen}..{last_seen} {count:5d}x [from={from}] {to}'.format(
+            **self.as_dict()))
 
 
 class InvalidAddressCollector:
