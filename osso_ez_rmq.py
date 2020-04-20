@@ -253,7 +253,7 @@ def rmq_uri(uri):
             "Used for reading. Exchange is used for publishing."
             return self.exchange
 
-    # RMQ_URI = rmq[s]://[USER:PASS@]HOST[:PORT]/VHOST/EXCHANGEorQUEUE
+    # RMQ_URI = rmq[s]://[USER:PASS@]HOST[:PORT]/VHOST/EXCHANGEorQUEUE[#KEY]
     parsed = urlparse(uri)
     assert parsed.scheme in ('rmq', 'rmqs'), parsed
     host = parsed.hostname
@@ -270,7 +270,7 @@ def rmq_uri(uri):
         vhost = '/'
     assert blank == '', parsed
     (username, password) = (parsed.username, parsed.password)
-    assert not parsed.query and not parsed.fragment, parsed
+    assert not parsed.query, parsed
     assert bool(parsed.username) == bool(parsed.password), parsed
     return RmqUri(
         host=host, port=port, username=username, password=password,

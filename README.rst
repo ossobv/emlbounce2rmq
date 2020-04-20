@@ -34,6 +34,37 @@ Example ``settings.py``::
       'HOSTNAME:PORT/VHOST/cas.mail.exchange')
     # you'll configure a cas.mail.queue that binds to this exchange in RabbitMQ
 
+Current "production" configuration::
+
+    #-- /etc/crontab
+
+    55 0 * * * root
+      find /var/mail/example.com/bounces -mtime +180 -regex '.*/[0-9]+[.].*'
+        -type f -delete
+
+    45 12 * * * root
+      find /var/mail/example.com/bounces/new /var/mail/example.com/bounces/cur
+        -regex '.*/[0-9].*' -type f | /usr/local/bin/emlbounce2rmq.sh
+
+
+    #-- /etc/postfix/sender_canonical_maps
+
+    # Rewrite some Example.com stuff to their own. This is not something we can
+    # solve. They should use authenticated senders and actually *read* the
+    # responses.
+    /^(bounces[+].*@example[.]com)$/        $1
+    /^(jira)@(example[.]com)$/              bounces+$1-at-$2@example.com
+    /^(noreply|timeline)@(example[.]nl)$/   bounces+$1-at-$2@example.com
+
+
+    #-- /usr/local/bin/emlbounce2rmq/settings.py
+
+    ACC_PUBLISH_API = (
+      'rmqs://xxx:xxx@acceptance:5671/acc2/cas.mail.exchange')
+    PROD_PUBLISH_API = (
+      'rmqs://xxx:xxx@production:5671//cas.mail.exchange#email')
+    PUBLISH_API = PROD_PUBLISH_API
+
 Requirements::
 
     pika>=0.10  # python3-pika
