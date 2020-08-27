@@ -310,6 +310,7 @@ def hacks_hop_count_exceeded(efile):
         rcpt = efile.email.get('X-Failed-Recipients')
         if not rcpt:
             return
+        efile.set_original_recipient(rcpt)
 
         if 'possible mail loop detected' in efile.email.get_payload():
             assert efile.email.get('Auto-Submitted') != 'auto-generated'
@@ -335,6 +336,7 @@ def hacks_access_denied(efile):
         rcpt = efile.email.get('X-Failed-Recipients')
         if not rcpt:
             return
+        efile.set_original_recipient(rcpt)
 
         if '550 5.4.1 Recipient address rejected' in efile.email.get_payload():
             assert efile.email.get('Auto-Submitted') == 'auto-replied'
