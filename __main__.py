@@ -65,7 +65,7 @@ def emlbounce2rmq(filenames, do_move, do_publish):
             invalids.add(efile)
         else:
             raise NotImplementedError(
-                'programming error on: {fn}'.format(efile.filename))
+                'programming error on: {fn}'.format(fn=efile.filename))
         finally:
             handlers_count[handler.__name__] += 1
 

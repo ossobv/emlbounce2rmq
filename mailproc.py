@@ -12,6 +12,10 @@ from email.parser import BytesParser
 MailParser = BytesParser  # export
 
 
+class EmailNotParsed(Exception):
+    pass
+
+
 class EmailResponse(Exception):
     def __init__(self, filename):
         self.filename = filename
@@ -315,8 +319,30 @@ def hacks_hop_count_exceeded(efile):
             raise HopCountExceeded(efile.filename, rcpt)
 
 
+def hacks_access_denied(efile):
+    if efile.is_from_mailer_daemon():
+        # This message was created automatically by the SMTP relay on
+        #   smtp.domain.nl.
+        #
+        # A message that you sent could not be delivered to all of its
+        #   recipients.
+        # The following address(es) failed:
+        #
+        #   u@domain.nl
+        #     SMTP error from remote mail server after RCPT TO:<u@domain.nl>:
+        #     host 172.16.0.31 [172.16.0.31]: 550 5.4.1 Recipient address
+        #     rejected: Access denied. AS(201234567) [DB3..outlook.com]
+        rcpt = efile.email.get('X-Failed-Recipients')
+        if not rcpt:
+            return
+
+        if '550 5.4.1 Recipient address rejected' in efile.email.get_payload():
+            assert efile.email.get('Auto-Submitted') == 'auto-replied'
+            raise Email5xx(efile.filename, rcpt)
+
+
 def abort_if_not_matched_handler(efile):
-    raise ValueError('could not handle: {!r}'.format(efile.filename))
+    raise EmailNotParsed('could not handle: {!r}'.format(efile.filename))
 
 
 handlers = (
@@ -329,6 +355,7 @@ handlers = (
     valid_user_reply,               # count:   262 -> ignore (and drop anyway)
     imss7_ndr,                      # count:    50
     hacks_hop_count_exceeded,       # count:     8
+    hacks_access_denied,            # count:   ???
     abort_if_not_matched_handler,
 )
 
@@ -352,7 +379,7 @@ class InvalidAddressList(list):
     def __str__(self):
         return (
             '{first_seen}..{last_seen} {count:5d}x [from={from}] {to}'.format(
-            **self.as_dict()))
+                **self.as_dict()))
 
 
 class InvalidAddressCollector:
