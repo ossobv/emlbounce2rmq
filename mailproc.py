@@ -72,7 +72,16 @@ class EmailFile:
         return self._is_from_mailer_daemon
 
     def is_auto_reply(self):
-        return self.email.get('Auto-Submitted') == 'auto-generated'
+        if self.email.get('Auto-Submitted') == 'auto-generated':
+            return True
+
+        if self.email.get('Auto-Submitted') == 'auto-replied':
+            # First seen Jul 2023, with a textual warning, not a bounce.
+            ct = self.email.get('Content-Type').split(';')
+            if ct[0] == 'text/plain':
+                return True
+
+        return False
 
     def get_date(self):
         if not hasattr(self, '_get_date'):
