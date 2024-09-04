@@ -353,6 +353,38 @@ def hacks_access_denied(efile):
             raise Email5xx(efile.filename, rcpt)
 
 
+def hacks_custom_trustwaveseg(efile):
+    if efile.is_from_mailer_daemon():
+        if efile.email.get('From').startswith('TrustwaveSEG@'):
+            payload = efile.email.get_payload()
+            if isinstance(payload, list) and len(payload) == 1:
+                payload = str(payload[0])
+            lines = [i.rstrip() for i in payload.split('\n')]
+            sender = rcpt = next_is_rcpt = status = None
+            for line in lines:
+                if line.startswith('Server refused mail at END OF DATA - '):
+                    # 554 5.4.14 Hop count exceeded
+                    status = line.split(' - ', 1)[1]
+                elif line.startswith('The following recipients were affected:'):
+                    next_is_rcpt = True
+                    rcpt = line.split('>', 1)[0][1:].strip()
+                elif next_is_rcpt:
+                    rcpt = line.strip()
+                    next_is_rcpt = False
+                elif line.startswith('Original Sender:'):
+                    sender = line.split(':', 1)[1].strip()
+                    if sender.startswith('<'):
+                        sender = sender[1:].split('>', 1)[0]
+            if sender and rcpt and status:
+                assert not efile.is_auto_reply(), efile
+                if status[0] == '4':
+                    efile.set_original_recipient(rcpt)
+                    raise Email4xx(efile.filename, rcpt)
+                elif status[0] == '5':
+                    efile.set_original_recipient(rcpt)
+                    raise Email5xx(efile.filename, rcpt)
+
+
 def abort_if_not_matched_handler(efile):
     raise EmailNotParsed('could not handle: {!r}'.format(efile.filename))
 
@@ -368,6 +400,7 @@ handlers = (
     imss7_ndr,                      # count:    50
     hacks_hop_count_exceeded,       # count:     8
     hacks_access_denied,            # count:   ???
+    hacks_custom_trustwaveseg,
     abort_if_not_matched_handler,
 )
 
