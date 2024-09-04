@@ -235,13 +235,14 @@ def has_message_delivery_status(efile):
             lines = [i.rstrip() for i in delivery_status.split('\n')]
             rcpt = final_rcpt = action = status = None
             for line in lines:
-                if line.startswith('Final-Recipient: rfc822;'):
+                lowline = line.lower()
+                if lowline.startswith('final-recipient: rfc822;'):
                     final_rcpt = line[len('Final-Recipient: rfc822;'):].strip()
-                if line.startswith('Original-Recipient: rfc822;'):
+                elif lowline.startswith('original-recipient: rfc822;'):
                     rcpt = line[len('Original-Recipient: rfc822;'):].strip()
-                if line.startswith('Action: '):
+                elif lowline.startswith('action: '):
                     action = line[len('Action: '):].strip()
-                if line.startswith('Status: '):
+                elif lowline.startswith('status: '):
                     status = line[len('Status: '):].strip()
             if not rcpt:
                 rcpt = final_rcpt
